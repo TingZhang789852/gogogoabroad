@@ -1120,11 +1120,9 @@ function saveItinNote(day, val) { itinNotes[day]=val; saveLS('busan_itin_notes',
 // ---- PLACE MODAL ----
 let editingPlaceDay = null;
 let editingPlaceIdx = null;
-let placePhotosData = [];
 
 function openAddPlace(day) {
-  editingPlaceDay = day; editingPlaceIdx = null; placePhotosData = [];
-  document.getElementById('placeModalTitle').textContent = '新增景點';
+  editingPlaceDay = day; editingPlaceIdx = null;   document.getElementById('placeModalTitle').textContent = '新增景點';
   document.getElementById('inputPlaceName').value = '';
   document.getElementById('inputPlaceNote').value = '';
   document.getElementById('inputTimeH').value = '';
@@ -1133,14 +1131,12 @@ function openAddPlace(day) {
   document.getElementById('inputNaverUrl').value = '';
   document.getElementById('deletePlaceBtn').style.display = 'none';
   document.querySelectorAll('.type-chip').forEach((c,i)=>c.classList.toggle('selected',i===0));
-  renderPlacePhotos();
   document.getElementById('placeModal').classList.add('open');
 }
 function openEditPlace(day, idx) {
   editingPlaceDay = day; editingPlaceIdx = idx;
   const items = getItinItems(day);
   const item = items[idx];
-  placePhotosData = item.photos ? [...item.photos] : [];
   document.getElementById('placeModalTitle').textContent = '編輯景點';
   document.getElementById('inputPlaceName').value = item.name||'';
   document.getElementById('inputPlaceNote').value = item.note||'';
@@ -1151,7 +1147,6 @@ function openEditPlace(day, idx) {
   document.getElementById('inputNaverUrl').value = item.naver||'';
   document.getElementById('deletePlaceBtn').style.display = 'block';
   document.querySelectorAll('.type-chip').forEach(c=>c.classList.toggle('selected', c.dataset.type===item.type));
-  renderPlacePhotos();
   document.getElementById('placeModal').classList.add('open');
 }
 function closePlaceModal() { document.getElementById('placeModal').classList.remove('open'); }
