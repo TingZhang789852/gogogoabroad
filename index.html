@@ -204,7 +204,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 .memo-list{padding:16px;display:flex;flex-direction:column;gap:12px;}
 .memo-card{background:var(--white);border-radius:var(--radius-md);padding:14px;box-shadow:var(--shadow);}
 .memo-card-photos{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
-.memo-card-photo{width:80px;height:80px;border-radius:var(--radius-sm);object-fit:cover;}
+.memo-card-photo{width:80px;height:80px;border-radius:var(--radius-sm);object-fit:cover;cursor:pointer;transition:transform 0.15s;}.memo-card-photo:active{transform:scale(0.95);}
 .memo-card-text{font-size:14px;color:var(--gray-700);line-height:1.6;white-space:pre-wrap;}
 .memo-card-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;border-top:1px solid var(--gray-100);padding-top:8px;}
 .memo-card-date{font-size:11px;color:var(--gray-400);}
@@ -215,6 +215,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 .empty-state .big-icon{font-size:48px;margin-bottom:12px;}
 
 /* CONFIRM */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9998;align-items:center;justify-content:center;cursor:pointer;}
+.lightbox.open{display:flex;}
+.lightbox img{max-width:95vw;max-height:92vh;object-fit:contain;border-radius:8px;}
+.lightbox-close{position:absolute;top:16px;right:16px;color:white;font-size:28px;cursor:pointer;background:rgba(0,0,0,0.4);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;}
 .confirm-dialog{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.5);align-items:center;justify-content:center;}
 .confirm-dialog.open{display:flex;}
 .confirm-box{background:white;border-radius:var(--radius-lg);padding:24px;margin:20px;text-align:center;max-width:320px;width:100%;}
@@ -866,6 +870,26 @@ const DEFAULT_ITIN = {
     {id:'d1p7', kind:'place', type:'attraction', name:'廣安里海灘', time:'5:00 PM', note:'看夕陽、夜景，附近有ALL SUNDAY貝果步行2分鐘', photos:[], google:'https://maps.app.goo.gl/ze9WpvPv8bbAU31Z9', naver:'https://map.naver.com/v5/search/광안리해수욕장'},
     {id:'d1p8', kind:'place', type:'food', name:'伍班長烤肉', time:'7:00 PM', note:'晚餐吃烤肉，從海雲台海灘步行可達', photos:[], google:'https://maps.app.goo.gl/ze9WpvPv8bbAU31Z9', naver:'https://map.naver.com/v5/search/오반장+해운대'},
     {id:'d1t3', kind:'text', content:'🍗 Puradak炸雞：推薦點黑蒜/蛋黃醬半半\n🥐 自然島鹽麵包 10PM關門前記得買\n⚠️ 早點回去休息，隔天早起跑行程，記得開通釜山pass 48h'},
+  ],
+  3: [
+    {id:'d3t1', kind:'text', content:'⭐️ 釜山pass通行證D2 ⭐️\n先去附近或超商買東西吃，因為可能滑坡車玩完才去吃飯已是下午'},
+    {id:'d3p1', kind:'place', type:'attraction', name:'樂天世界 Lotte World', time:'10:00 AM', note:'10點開，評論估計玩約3h，可考慮在裡面吃午餐', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/롯데월드+어드벤처+부산'},
+    {id:'d3p2', kind:'place', type:'attraction', name:'Skyline Luge 滑坡車', time:'10:00 AM', note:'10點開，與樂天世界搭配安排', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/스카이라인+루지+부산'},
+    {id:'d3p3', kind:'place', type:'food', name:'더바베큐051 烤肉餐廳', time:'1:00 PM', note:'兩人set 約₩52,000，非常推薦！', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://naver.me/x4F6LRPN'},
+    {id:'d3p4', kind:'place', type:'food', name:'Waveon Coffee', time:'3:00 PM', note:'超屌海景咖啡廳，從樂天搭車約20分鐘，約台幣400出頭', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/웨이브온커피'},
+    {id:'d3p5', kind:'place', type:'attraction', name:'Club D Oasis 汗蒸幕', time:'5:00 PM', note:'參考 threads：@_food.travel', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/클럽디오아시스'},
+    {id:'d3p6', kind:'place', type:'food', name:'海雲台傳統市場', time:'7:00 PM', note:'晚餐 + 有名糖餅！！必吃', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/해운대전통시장'},
+    {id:'d3p7', kind:'place', type:'attraction', name:'X the sky 展望台', time:'8:00 PM', note:'9PM關，記得要趕在關門前入場', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/엑스더스카이'},
+  ],
+  4: [
+    {id:'d4p1', kind:'place', type:'attraction', name:'甘川洞文化村 + Flipbook Studio翻翻書', time:'9:00 AM', note:'釜山pass免費！第一次彩排第二次正式拍，10-15分鐘後可領先去逛。建議4-6點最少人', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/감천문화마을'},
+    {id:'d4p2', kind:'place', type:'food', name:'富平罐頭市場 / 扎嘎其市場', time:'12:00 PM', note:'午餐擇一，BIFF廣場吃糖餅，可逛國際市場', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/부평깡통시장'},
+    {id:'d4p3', kind:'place', type:'attraction', name:'松島纜車', time:'2:00 PM', note:'Crystal Cabin 水晶車廂！從Bay Station搭到Sky Park，午後上去才有機會兩人一車', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/송도해상케이블카'},
+    {id:'d4p4', kind:'place', type:'attraction', name:'白淺灘文化村', time:'3:00 PM', note:'散步拍照', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/흰여울문화마을'},
+    {id:'d4p5', kind:'place', type:'food', name:'Footbath Cafe View / Having Moment', time:'3:30 PM', note:'芝麻拿鐵很推、冰淇淋拿鐵也好喝', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/having+moment+부산'},
+    {id:'d4p6', kind:'place', type:'attraction', name:'Arte Museum', time:'5:00 PM', note:'週末最晚7點入館，平日最晚6點！', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/아르떼뮤지엄+부산'},
+    {id:'d4p7', kind:'place', type:'food', name:'明星一隻雞', time:'7:00 PM', note:'晚餐，記得提前訂位', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/명성닭한마리'},
+    {id:'d4p8', kind:'place', type:'attraction', name:'荒嶺山烽火台 夜景', time:'8:30 PM', note:'帶腳架！夜景很美', photos:[], google:'https://maps.app.goo.gl/px6r35BYxZzd3r366', naver:'https://map.naver.com/v5/search/황령산봉수대'},
   ]
 };
 
@@ -1241,7 +1265,7 @@ function renderMemos() {
     return; 
   }
   list.innerHTML = memos.slice().reverse().map(m => {
-    const photos = (m.photos||[]).map(p=>`<img src="${p}" class="memo-card-photo">`).join('');
+    const photos = (m.photos||[]).map(p=>`<img src="${p}" class="memo-card-photo" onclick="openLightbox('${p}')">`).join('');
     return `<div class="memo-card">
       ${photos?`<div class="memo-card-photos">${photos}</div>`:''}
       ${m.text?`<div class="memo-card-text">${m.text}</div>`:''}
@@ -1491,8 +1515,22 @@ async function initFirebaseSync() {
 
 
 
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
 initFirebaseSync();
 
 </script>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox-close">✕</div>
+  <img id="lightboxImg" src="" alt="">
+</div>
 </body>
 </html>
