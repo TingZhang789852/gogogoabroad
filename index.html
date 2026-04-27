@@ -1425,16 +1425,20 @@ function supaHeaders() {
 
 async function supaRead() {
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout
     const res = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?id=eq.${SUPA_ROW_ID}&select=value`, {
-      headers: supaHeaders()
+      headers: supaHeaders(),
+      signal: controller.signal
     });
+    clearTimeout(timer);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     if (!rows || rows.length === 0) return null;
     return JSON.parse(rows[0].value);
   } catch(e) {
     console.error('Supabase read error:', e);
-    return undefined; // undefined = network error
+    return undefined;
   }
 }
 
@@ -1490,7 +1494,6 @@ async function initFirebaseSync() {
     return;
   }
   if (remote === null) {
-    // Supabase empty - push local data
     showSyncStatus('⬆ 上傳資料…', 'yellow');
     const ok = await supaWrite(getLocalData());
     showSyncStatus(ok ? '✓ 已連線' : '✗ 上傳失敗', ok ? 'green' : 'red');
@@ -1499,8 +1502,13 @@ async function initFirebaseSync() {
     showSyncStatus(changed ? '↓ 資料已同步' : '✓ 已連線', 'green');
     if (changed) refreshCurrentPage();
   }
+  // Clear status after 3s regardless
+  setTimeout(() => {
+    const el = document.getElementById('syncStatus');
+    if (el) el.style.opacity = '0';
+  }, 3500);
 
-  // Poll every 8 seconds for changes from other devices
+  // Poll every 10 seconds for changes from other devices
   setInterval(async () => {
     const remote = await supaRead();
     if (remote === undefined || remote === null) return;
@@ -1509,7 +1517,8 @@ async function initFirebaseSync() {
       showSyncStatus('↓ 已更新', 'green');
       refreshCurrentPage();
     }
-  }, 8000);
+    // Don't update status if nothing changed - let it fade naturally
+  }, 10000);
 }
 // ===================== END SYNC =====================
 
