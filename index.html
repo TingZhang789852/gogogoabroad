@@ -180,7 +180,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 .map-btn{flex:1;padding:7px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;}
 .map-btn-google{background:#4285F4;color:white;}
 .map-btn-naver{background:#03C75A;color:white;}
-.itin-text{background:var(--white);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm);font-size:13px;color:var(--gray-700);line-height:1.6;margin-bottom:10px;position:relative;}
+.itin-text{background:var(--white);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm);font-size:13px;color:var(--gray-700);line-height:1.6;margin-bottom:10px;position:relative;white-space:pre-wrap;word-break:break-word;}
 .itin-link{color:var(--primary);text-decoration:underline;}
 .edit-btn-small{background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0;}
 .add-place-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--white);border:1.5px dashed var(--gray-300);border-radius:var(--radius-md);cursor:pointer;font-size:13px;color:var(--gray-500);width:100%;margin-top:4px;font-family:inherit;}
@@ -934,9 +934,17 @@ function renderItinDay() {
   const note = itinNotes[currentItinDay]||'';
   const items = getItinItems(currentItinDay);
 
-  function itemCard(item, idx) {
+  function linkify(text) {
+  if (!text) return '';
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\n/g,'<br>')
+    .replace(/(https?:\/\/[^\s<&]+)/g,'<a href="$1" target="_blank" style="color:var(--primary);word-break:break-all;">$1</a>');
+}
+
+function itemCard(item, idx) {
     if (item.kind==='text') {
-      const text = item.content.replace(/\n/g,'<br>').replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" class="itin-link">$1</a>');
+      const text = linkify(item.content);
       return `<div class="itin-draggable itin-text" data-idx="${idx}">
         <div class="drag-left-bar drag-left-bar-text" title="長按左側拖曳排序"></div>
         <div style="flex:1;">
@@ -959,7 +967,7 @@ function renderItinDay() {
             <div class="itin-place-name ${nc}">📍 ${item.name}${timeStr}</div>
             <button class="edit-btn-small" onclick="openEditPlace(${currentItinDay},${idx})">✏️</button>
           </div>
-          ${item.note?`<div class="itin-place-note">${item.note}</div>`:''}
+          ${item.note?`<div class="itin-place-note">${linkify(item.note)}</div>`:''}
 
           <div class="itin-map-btns">
             ${item.google?`<a href="${item.google}" target="_blank" class="map-btn map-btn-google">📍 Google Map</a>`:''}
@@ -1285,7 +1293,7 @@ function renderMemos() {
     const photos = (m.photos||[]).map(p=>`<img src="${p}" class="memo-card-photo" onclick="openLightbox('${p}')">`).join('');
     return `<div class="memo-card">
       ${photos?`<div class="memo-card-photos">${photos}</div>`:''}
-      ${m.text?`<div class="memo-card-text">${m.text}</div>`:''}
+      ${m.text?`<div class="memo-card-text">${linkify(m.text)}</div>`:''}
       <div class="memo-card-footer">
         <span class="memo-card-date">${m.date}</span>
         <button class="edit-btn-small" style="font-size:13px;" onclick="openEditMemo('${m.id}')">✏️ 編輯</button>
@@ -1367,24 +1375,34 @@ document.getElementById('mainFab').style.display = 'flex';
 const SUPA_URL = 'https://unosogrtmujdwdetyphg.supabase.co';
 const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVub3NvZ3J0bXVqZHdkZXR5cGhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxOTQwMTgsImV4cCI6MjA5Mjc3MDAxOH0.eRYU2TQ3rNxMx_UoXmEC-9bfkvc1YtfabjFwSgcM80E';
 const SUPA_TABLE = 'gogogo';
-const SUPA_ROW_ID = 1; // We use a single row to store all data
+const SUPA_ROW_ID = 1;
+
 let syncTimeout = null;
+let isSyncing = false;
+
+// Persist localModifiedAt so it survives page reload
+function getLocalModifiedAt() {
+  return parseInt(localStorage.getItem('busan_modified_at') || '0');
+}
+function setLocalModifiedAt(ts) {
+  localStorage.setItem('busan_modified_at', String(ts));
+}
 
 function showSyncStatus(msg, color) {
   let el = document.getElementById('syncStatus');
   if (!el) {
     el = document.createElement('div');
     el.id = 'syncStatus';
-    el.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:100px;font-size:12px;font-weight:600;z-index:9999;pointer-events:none;white-space:nowrap;';
+    el.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:100px;font-size:12px;font-weight:600;z-index:9999;pointer-events:none;white-space:nowrap;transition:opacity 0.5s;';
     document.body.appendChild(el);
   }
   el.textContent = msg;
-  el.style.display = 'block';
   el.style.opacity = '1';
+  el.style.display = 'block';
   el.style.background = color==='green'?'#D1FAE5':color==='red'?'#FEE2E2':'#FEF3C7';
   el.style.color = color==='green'?'#065F46':color==='red'?'#991B1B':'#92400E';
   clearTimeout(el._timer);
-  if (color==='green') el._timer = setTimeout(()=>{ el.style.opacity='0'; }, 3000);
+  if (color==='green') el._timer = setTimeout(()=>{ el.style.opacity='0'; }, 2500);
 }
 
 function toArr(val) {
@@ -1396,6 +1414,7 @@ function toArr(val) {
 
 function getLocalData() {
   return {
+    _ts: getLocalModifiedAt(),
     expenses: expenses || [],
     itinNotes: itinNotes || {},
     itinPlaces: itinPlaces || {},
@@ -1404,30 +1423,31 @@ function getLocalData() {
   };
 }
 
-function applyRemoteData(data) {
+function applyData(data) {
+  // Apply data to memory + localStorage (called for both remote pull and local load)
   if (!data) return false;
   let changed = false;
-  if (data.expenses !== undefined) {
-    const v = toArr(data.expenses);
-    if (JSON.stringify(v) !== JSON.stringify(expenses)) { expenses=v; localStorage.setItem('busan_expenses',JSON.stringify(v)); changed=true; }
+  const newExp = toArr(data.expenses);
+  if (JSON.stringify(newExp) !== JSON.stringify(expenses)) {
+    expenses = newExp; localStorage.setItem('busan_expenses', JSON.stringify(newExp)); changed = true;
   }
-  if (data.itinNotes !== undefined) {
-    const v = data.itinNotes||{};
-    if (JSON.stringify(v) !== JSON.stringify(itinNotes)) { itinNotes=v; localStorage.setItem('busan_itin_notes',JSON.stringify(v)); changed=true; }
+  const newNotes = data.itinNotes || {};
+  if (JSON.stringify(newNotes) !== JSON.stringify(itinNotes)) {
+    itinNotes = newNotes; localStorage.setItem('busan_itin_notes', JSON.stringify(newNotes)); changed = true;
   }
-  if (data.itinPlaces !== undefined) {
-    const raw = data.itinPlaces||{};
-    const v = {};
-    Object.keys(raw).forEach(k=>{ v[k]=toArr(raw[k]); });
-    if (JSON.stringify(v) !== JSON.stringify(itinPlaces)) { itinPlaces=v; localStorage.setItem('busan_itin_places',JSON.stringify(v)); changed=true; }
+  const rawPlaces = data.itinPlaces || {};
+  const newPlaces = {};
+  Object.keys(rawPlaces).forEach(k => { newPlaces[k] = toArr(rawPlaces[k]); });
+  if (JSON.stringify(newPlaces) !== JSON.stringify(itinPlaces)) {
+    itinPlaces = newPlaces; localStorage.setItem('busan_itin_places', JSON.stringify(newPlaces)); changed = true;
   }
-  if (data.itinTexts !== undefined) {
-    const v = data.itinTexts||{};
-    if (JSON.stringify(v) !== JSON.stringify(itinTexts)) { itinTexts=v; localStorage.setItem('busan_itin_texts',JSON.stringify(v)); changed=true; }
+  const newTexts = data.itinTexts || {};
+  if (JSON.stringify(newTexts) !== JSON.stringify(itinTexts)) {
+    itinTexts = newTexts; localStorage.setItem('busan_itin_texts', JSON.stringify(newTexts)); changed = true;
   }
-  if (data.memos !== undefined) {
-    const v = toArr(data.memos);
-    if (JSON.stringify(v) !== JSON.stringify(memos)) { memos=v; localStorage.setItem('busan_memos',JSON.stringify(v)); changed=true; }
+  const newMemos = toArr(data.memos);
+  if (JSON.stringify(newMemos) !== JSON.stringify(memos)) {
+    memos = newMemos; localStorage.setItem('busan_memos', JSON.stringify(newMemos)); changed = true;
   }
   return changed;
 }
@@ -1442,57 +1462,71 @@ function supaHeaders() {
 
 async function supaRead() {
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 8000); // 8s timeout
-    const res = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}?id=eq.${SUPA_ROW_ID}&select=value`, {
-      headers: supaHeaders(),
-      signal: controller.signal
-    });
-    clearTimeout(timer);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8000);
+    const res = await fetch(
+      `${SUPA_URL}/rest/v1/${SUPA_TABLE}?id=eq.${SUPA_ROW_ID}&select=value`,
+      { headers: supaHeaders(), signal: ctrl.signal }
+    );
+    clearTimeout(t);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const rows = await res.json();
     if (!rows || rows.length === 0) return null;
     return JSON.parse(rows[0].value);
   } catch(e) {
-    console.error('Supabase read error:', e);
+    console.error('Read error:', e.message);
     return undefined;
   }
 }
 
 async function supaWrite(data) {
   try {
-    // Try upsert (insert or update)
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
     const res = await fetch(`${SUPA_URL}/rest/v1/${SUPA_TABLE}`, {
       method: 'POST',
-      headers: {
-        ...supaHeaders(),
-        'Prefer': 'resolution=merge-duplicates'
-      },
-      body: JSON.stringify({ id: SUPA_ROW_ID, value: JSON.stringify(data) })
+      headers: { ...supaHeaders(), 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ id: SUPA_ROW_ID, value: JSON.stringify(data) }),
+      signal: ctrl.signal
     });
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error('HTTP ' + res.status + ': ' + err);
-    }
-    return true;
+    clearTimeout(t);
+    return res.ok || res.status === 201 || res.status === 204;
   } catch(e) {
-    console.error('Supabase write error:', e);
+    console.error('Write error:', e.message);
     return false;
   }
 }
 
+// Called every time user saves anything locally
 function saveLS(key, val) {
+  // 1. Save to localStorage immediately
   localStorage.setItem(key, JSON.stringify(val));
+  // 2. Update timestamp immediately (persisted!)
+  const ts = Date.now();
+  setLocalModifiedAt(ts);
   showSyncStatus('⟳ 儲存中…', 'yellow');
+  // 3. Debounce the Supabase write
   clearTimeout(syncTimeout);
   syncTimeout = setTimeout(async () => {
+    if (isSyncing) {
+      // Retry after a moment
+      syncTimeout = setTimeout(async () => {
+        isSyncing = true;
+        const ok = await supaWrite(getLocalData());
+        isSyncing = false;
+        showSyncStatus(ok ? '✓ 已同步' : '✗ 同步失敗', ok ? 'green' : 'red');
+      }, 1500);
+      return;
+    }
+    isSyncing = true;
     const ok = await supaWrite(getLocalData());
+    isSyncing = false;
     showSyncStatus(ok ? '✓ 已同步' : '✗ 同步失敗', ok ? 'green' : 'red');
-  }, 800);
+  }, 1000);
 }
 
 function loadLS(key, def) {
-  try { return JSON.parse(localStorage.getItem(key)||JSON.stringify(def)); } catch(e) { return def; }
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(def)); } catch(e) { return def; }
 }
 
 function refreshCurrentPage() {
@@ -1505,39 +1539,64 @@ function refreshCurrentPage() {
 
 async function initFirebaseSync() {
   showSyncStatus('⟳ 連線中…', 'yellow');
+
   const remote = await supaRead();
+
   if (remote === undefined) {
-    showSyncStatus('✗ 無法連線', 'red');
+    // Network error – use local data, keep trying
+    showSyncStatus('✗ 無法連線（離線模式）', 'red');
+    setTimeout(initFirebaseSync, 20000); // retry in 20s
     return;
   }
-  if (remote === null) {
-    showSyncStatus('⬆ 上傳資料…', 'yellow');
+
+  const localTs = getLocalModifiedAt();
+  const remoteTs = remote ? (remote._ts || 0) : 0;
+
+  console.log('localTs:', localTs, 'remoteTs:', remoteTs);
+
+  if (remote === null || localTs > remoteTs) {
+    // Local is newer → push local to Supabase
+    console.log('Pushing local to remote');
+    showSyncStatus('⬆ 同步中…', 'yellow');
     const ok = await supaWrite(getLocalData());
-    showSyncStatus(ok ? '✓ 已連線' : '✗ 上傳失敗', ok ? 'green' : 'red');
-  } else {
-    const changed = applyRemoteData(remote);
-    showSyncStatus(changed ? '↓ 資料已同步' : '✓ 已連線', 'green');
+    showSyncStatus(ok ? '✓ 已同步' : '✗ 同步失敗', ok ? 'green' : 'red');
+  } else if (remoteTs > localTs) {
+    // Remote is newer → apply remote
+    console.log('Applying remote data');
+    const changed = applyData(remote);
+    setLocalModifiedAt(remoteTs); // match timestamps
+    showSyncStatus('↓ 資料已同步', 'green');
     if (changed) refreshCurrentPage();
+  } else {
+    // Same timestamp → already in sync
+    showSyncStatus('✓ 已連線', 'green');
   }
-  // Clear status after 3s regardless
+
   setTimeout(() => {
     const el = document.getElementById('syncStatus');
     if (el) el.style.opacity = '0';
-  }, 3500);
+  }, 3000);
 
-  // Poll every 10 seconds for changes from other devices
+  // Poll every 15s – only pull if remote is genuinely newer
   setInterval(async () => {
-    const remote = await supaRead();
-    if (remote === undefined || remote === null) return;
-    const changed = applyRemoteData(remote);
-    if (changed) {
-      showSyncStatus('↓ 已更新', 'green');
-      refreshCurrentPage();
+    if (isSyncing) return;
+    const r = await supaRead();
+    if (!r) return;
+    const rTs = r._ts || 0;
+    const lTs = getLocalModifiedAt();
+    if (rTs > lTs) {
+      const changed = applyData(r);
+      setLocalModifiedAt(rTs);
+      if (changed) {
+        showSyncStatus('↓ 已更新', 'green');
+        refreshCurrentPage();
+      }
     }
-    // Don't update status if nothing changed - let it fade naturally
-  }, 10000);
+  }, 15000);
 }
 // ===================== END SYNC =====================
+
+
 
 
 
