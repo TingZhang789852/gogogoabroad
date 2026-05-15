@@ -160,10 +160,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 .itin-draggable > div:not(.drag-left-bar){flex:1;padding:12px 14px;}
 .itin-note-box{background:var(--orange-light);border:1px solid #FED7AA;border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:14px;}
 .itin-note-label{font-size:11px;color:#C2410C;font-weight:600;margin-bottom:4px;}
-.itin-note-input{background:transparent;border:none;outline:none;font-size:13px;color:var(--gray-700);width:100%;font-family:inherit;resize:none;min-height:32px;}
+.itin-note-input{background:transparent;border:none;outline:none;font-size:13px;color:var(--gray-700);width:100%;font-family:inherit;resize:none;min-height:32px;overflow:hidden;}
 
 /* ITIN PLACE CARD */
-.itin-place{background:var(--white);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm);margin-bottom:10px;position:relative;}
+.itin-place{background:var(--white);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);margin-bottom:10px;position:relative;}
 .itin-place.type-food{border-left:3px solid var(--orange);}
 .itin-place.type-attraction{border-left:3px solid var(--primary);}
 .itin-place.type-other{border-left:3px solid var(--gray-400);}
@@ -180,7 +180,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'PingFang TC','Noto Sans TC',s
 .map-btn{flex:1;padding:7px;border-radius:var(--radius-sm);font-size:12px;font-weight:600;border:none;cursor:pointer;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:4px;}
 .map-btn-google{background:#4285F4;color:white;}
 .map-btn-naver{background:#03C75A;color:white;}
-.itin-text{background:var(--white);border-radius:var(--radius-md);padding:12px 14px;box-shadow:var(--shadow-sm);font-size:13px;color:var(--gray-700);line-height:1.6;margin-bottom:10px;position:relative;white-space:pre-wrap;word-break:break-word;}
+.itin-text{background:var(--white);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);font-size:13px;color:var(--gray-700);line-height:1.6;margin-bottom:10px;position:relative;white-space:pre-wrap;word-break:break-word;}
 .itin-link{color:var(--primary);text-decoration:underline;}
 .edit-btn-small{background:none;border:none;color:var(--gray-400);cursor:pointer;font-size:14px;padding:2px 4px;flex-shrink:0;}
 .add-place-btn{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--white);border:1.5px dashed var(--gray-300);border-radius:var(--radius-md);cursor:pointer;font-size:13px;color:var(--gray-500);width:100%;margin-top:4px;font-family:inherit;}
@@ -960,7 +960,7 @@ function itemCard(item, idx) {
       const timeStr = item.time ? `<span class="itin-place-time">⏰ ${item.time}</span>` : '';
       const photosHtml = '';
       const barClass = item.type==='food'?'drag-left-bar-food':item.type==='attraction'?'drag-left-bar-attr':'drag-left-bar-other';
-      return `<div class="itin-draggable itin-place ${tc}" data-idx="${idx}" style="border-left:none;padding-left:0;">
+      return `<div class="itin-draggable itin-place ${tc}" data-idx="${idx}" >
         <div class="drag-left-bar ${barClass}" title="長按左側拖曳排序"></div>
         <div style="flex:1;">
           <div class="itin-place-header">
@@ -1016,7 +1016,9 @@ function itemCard(item, idx) {
     <div style="font-size:13px;color:var(--gray-500);margin-bottom:12px;">${meta.date}</div>
     <div class="itin-note-box">
       <div class="itin-note-label">📝 今日備注</div>
-      <textarea class="itin-note-input" id="itinNote${currentItinDay}" placeholder="記下今天的備注…" onchange="saveItinNote(${currentItinDay},this.value)">${note}</textarea>
+      <textarea class="itin-note-input" id="itinNote${currentItinDay}" placeholder="記下今天的備注…" 
+        oninput="autoResize(this);saveItinNote(${currentItinDay},this.value)"
+        onchange="saveItinNote(${currentItinDay},this.value)">${note}</textarea>
     </div>
     <div id="itinCardList">${cardsHtml}</div>
     <div style="display:flex;gap:8px;margin-top:8px;">
@@ -1027,6 +1029,14 @@ function itemCard(item, idx) {
 
   document.getElementById('itinContent').innerHTML = html;
   initDragDrop();
+  // Auto-resize the note textarea to fit content
+  const noteEl = document.getElementById('itinNote' + currentItinDay);
+  if (noteEl) autoResize(noteEl);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
 }
 
 function initDragDrop() {
